@@ -1,0 +1,19 @@
+{
+  "name": "avp-joao-turano-2ati",
+  "version": "1.0.0",
+  "description": "API REST de catalogo de animes - AV1/AV2 Desenvolvimento de Websites",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": ["express", "api", "rest", "animes"],
+  "author": "Joao Turano",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}
