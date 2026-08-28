@@ -1,1 +1,0 @@
-# poo-2026-joao-turano
