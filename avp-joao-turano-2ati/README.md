@@ -1,8 +1,8 @@
 # API de Catálogo de Animes
 
-Projeto da AV1 de Desenvolvimento de Websites — API REST feita com **Node.js** e
-**Express**, simulando um catálogo de animes com armazenamento temporário em
-memória (os dados existem apenas enquanto o servidor está rodando).
+Projeto da AV1 e AV2 de Desenvolvimento de Websites — API REST feita com
+**Node.js**, **Express**, **bcrypt**, **JWT**, **Multer** e **Swagger**, simulando
+um catálogo de animes com armazenamento temporário em memória.
 
 ## Tema
 
@@ -25,6 +25,9 @@ npm run dev
 
 O servidor sobe em `http://localhost:3000`.
 
+Para trocar a chave usada nos tokens, defina a variável `JWT_SECRET` antes de
+iniciar o servidor. Sem ela, é usada uma chave padrão para fins didáticos.
+
 ## Rotas disponíveis
 
 | Método | Rota            | Descrição                              |
@@ -34,6 +37,51 @@ O servidor sobe em `http://localhost:3000`.
 | GET    | /animes/:id     | Consulta um anime específico pelo ID    |
 | PUT    | /animes/:id     | Edita um anime existente pelo ID        |
 | DELETE | /animes/:id     | Remove um anime pelo ID                 |
+
+Todas as rotas de `/animes` exigem o cabeçalho `Authorization: Bearer TOKEN`.
+
+## AV2: usuários e autenticação
+
+| Método | Rota             | Descrição                       |
+|--------|------------------|---------------------------------|
+| POST   | /usuarios        | Cadastra um usuário             |
+| POST   | /usuarios/login  | Faz login e retorna um token JWT|
+
+Exemplo para cadastro:
+
+```json
+{
+   "nome": "João",
+   "email": "joao@email.com",
+   "senha": "123456"
+}
+```
+
+A senha é armazenada usando bcrypt e nunca é devolvida nas respostas. Depois
+do login, envie o token retornado nas rotas protegidas:
+
+```text
+Authorization: Bearer SEU_TOKEN
+```
+
+## Upload de imagens
+
+| Método | Rota    | Descrição                       |
+|--------|---------|---------------------------------|
+| POST   | /upload | Envia uma imagem no campo `imagem` |
+
+A rota exige token JWT. São aceitos JPG, JPEG, PNG, GIF e WEBP com tamanho
+máximo de 5 MB. Os arquivos são salvos localmente em `uploads/`.
+
+No Insomnia, selecione `Multipart Form`, crie o campo `imagem` como tipo
+`File` e selecione o arquivo.
+
+## Swagger
+
+A documentação interativa está disponível em `http://localhost:3000/api-docs`.
+
+No Swagger, use o botão **Authorize** e informe `Bearer SEU_TOKEN` para testar
+as rotas protegidas.
 
 ### Exemplo de corpo (JSON) para POST/PUT
 
@@ -74,8 +122,8 @@ avp-joao-turano-2ati/
 └── README.md
 ```
 
-## Próximas etapas (AV2)
+## Recursos da AV2 implementados
 
-Na AV2 o projeto será evoluído com cadastro de usuários, login, criptografia
-de senhas, proteção de rotas por middleware, upload de arquivos (ex: capa do
-anime) e documentação da API com Swagger.
+O projeto possui cadastro de usuários, login, criptografia de senhas com
+bcrypt, tokens JWT, middleware de proteção, upload validado de imagens e
+documentação da API com Swagger.
