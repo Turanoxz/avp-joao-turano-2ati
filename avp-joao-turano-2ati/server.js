@@ -1,39 +1,53 @@
-const express = require("express");
-const path = require("path");
-const swaggerUi = require("swagger-ui-express");
-const animesRoutes = require("./routes/animes");
-const usuariosRoutes = require("./routes/usuarios");
-const uploadRoutes = require("./routes/upload");
-const swaggerDocument = require("./swagger");
-const { autenticar } = require("./middleware/auth");
+import "./config/env.js";
+import express from "express";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import swaggerUi from "swagger-ui-express";
+import animesRoutes from "./routes/animes.js";
+import usuariosRoutes from "./routes/usuarios.js";
+import uploadRoutes from "./routes/upload.js";
+import swaggerDocument from "./swagger.js";
+import { autenticar } from "./middleware/auth.js";
+import { errorHandler } from "./middleware/errorHandler.js";
+import { prisma } from "./db/prisma.js";
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT || 3000);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Middleware para interpretar JSON no corpo das requisições
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-// Rota raiz apenas para confirmar que a API está no ar
 app.get("/", (req, res) => {
   res.json({ mensagem: "API de Catálogo de Animes está rodando!" });
 });
 
-// Rotas públicas de cadastro e login
 app.use("/usuarios", usuariosRoutes);
-
-// Documentação pública da API
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
-// Rotas da AV1 protegidas por token JWT
 app.use("/animes", autenticar, animesRoutes);
 app.use("/upload", autenticar, uploadRoutes);
 
-// Rota para qualquer caminho não encontrado
 app.use((req, res) => {
   res.status(404).json({ erro: "Rota não encontrada." });
 });
+app.use(errorHandler);
 
-app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
+const server = app.listen(PORT, async () => {
+  try {
+    await prisma.$connect();
+    console.log(`Servidor rodando em http://localhost:${PORT}`);
+  } catch (error) {
+    console.error("Não foi possível conectar ao banco de dados:", error.message);
+    server.close(() => process.exit(1));
+  }
 });
+
+async function encerrarServidor() {
+  server.close(async () => {
+    await prisma.$disconnect();
+    process.exit(0);
+  });
+}
+
+process.on("SIGINT", encerrarServidor);
+process.on("SIGTERM", encerrarServidor);

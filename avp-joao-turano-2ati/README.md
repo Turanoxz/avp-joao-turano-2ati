@@ -2,7 +2,7 @@
 
 Projeto da AV1 e AV2 de Desenvolvimento de Websites — API REST feita com
 **Node.js**, **Express**, **bcrypt**, **JWT**, **Multer** e **Swagger**, simulando
-um catálogo de animes com armazenamento temporário em memória.
+um catálogo de animes com persistência em MySQL usando Prisma ORM 7.
 
 ## Tema
 
@@ -13,10 +13,14 @@ planejo assistir), nota e sinopse.
 ## Como rodar o projeto
 
 ```bash
-# 1. Instalar as dependências
+# Execute estes comandos na pasta raiz do repositório
 npm install
 
-# 2. Rodar o servidor
+# Gere o Prisma Client e aplique as migrations
+npm run db:generate
+npm run db:migrate
+
+# Inicie o servidor
 npm start
 
 # (opcional, com reinício automático ao salvar arquivos)
@@ -25,8 +29,11 @@ npm run dev
 
 O servidor sobe em `http://localhost:3000`.
 
-Para trocar a chave usada nos tokens, defina a variável `JWT_SECRET` antes de
-iniciar o servidor. Sem ela, é usada uma chave padrão para fins didáticos.
+Configure `DATABASE_URL` e `JWT_SECRET` no arquivo `.env` na raiz do repositório.
+Copie `.env.example` para `.env` e substitua `JWT_SECRET` por uma chave aleatória
+com pelo menos 32 caracteres. Não compartilhe nem envie o `.env` ao repositório.
+
+Para executar os testes automatizados das validações, use `npm test`.
 
 ## Rotas disponíveis
 
@@ -53,12 +60,14 @@ Exemplo para cadastro:
 {
    "nome": "João",
    "email": "joao@email.com",
-   "senha": "123456"
+   "senha": "SenhaSegura2026!"
 }
 ```
 
-A senha é armazenada usando bcrypt e nunca é devolvida nas respostas. Depois
-do login, envie o token retornado nas rotas protegidas:
+A senha é recebida como `senha`, transformada com bcrypt e persistida no campo
+`senhaHash`; a senha original e o hash nunca são devolvidos nas respostas. O
+usuário possui ID UUID (`id`), além das datas `created` e `updated`. Depois do
+login, envie o token retornado nas rotas protegidas:
 
 ```text
 Authorization: Bearer SEU_TOKEN
@@ -100,27 +109,46 @@ as rotas protegidas.
 Campos obrigatórios no cadastro: `titulo` e `genero`. Os demais são opcionais
 e recebem valores padrão se não forem enviados.
 
-## Testando com Insomnia/Postman
+## Demonstração com Insomnia/Postman
 
-1. Crie uma requisição `GET http://localhost:3000/animes` para listar os animes
-   iniciais (o projeto já vem com 2 animes de exemplo).
-2. Crie uma requisição `POST http://localhost:3000/animes` com um corpo JSON
-   (aba Body > JSON) para cadastrar um novo anime.
-3. Copie o `id` retornado e use em `GET`, `PUT` e `DELETE` em
-   `http://localhost:3000/animes/:id` para consultar, editar e excluir.
+Não há dados de animes inseridos automaticamente. Depois de iniciar o servidor:
+
+1. Envie `POST http://localhost:3000/usuarios` com o JSON de cadastro acima.
+   Tente cadastrar o mesmo e-mail novamente para demonstrar a resposta `409`.
+2. Envie `POST http://localhost:3000/usuarios/login` com `email` e `senha`.
+   Guarde o token retornado; credenciais incorretas devem responder `401`.
+3. Envie `GET http://localhost:3000/animes` sem token e confirme `401`. Depois
+   configure `Authorization: Bearer SEU_TOKEN` para as rotas abaixo.
+4. Faça `POST /animes` com o JSON de exemplo e guarde o `id` retornado.
+5. Demonstre `GET /animes`, `GET /animes/:id`, `PUT /animes/:id` e
+   `DELETE /animes/:id`, usando o mesmo ID. Após excluir, a consulta deve
+   retornar `404`; campos inválidos devem retornar `400`.
+
+Todos esses dados são gravados no banco MySQL/MariaDB por Prisma e permanecem
+após reiniciar o servidor. As rotas CRUD são protegidas por JWT.
 
 ## Estrutura do projeto
 
 ```
 avp-joao-turano-2ati/
-├── data/
-│   └── animes.js       # lista de animes em memória
-├── routes/
-│   └── animes.js        # rotas do CRUD
-├── server.js             # ponto de entrada da aplicação
-├── package.json
-└── README.md
+├── prisma/               # schema e migrations
+├── generated/prisma/     # Prisma Client gerado
+├── avp-joao-turano-2ati/
+│   ├── config/            # ambiente e configuração de segurança
+│   ├── controllers/       # validação de fluxo HTTP e respostas
+│   ├── db/                # cliente Prisma compartilhado
+│   ├── middleware/        # autenticação e erros
+│   ├── models/            # acesso persistente aos dados via Prisma
+│   ├── routes/            # declaração dos endpoints
+│   ├── utils/             # validações reutilizáveis
+│   └── server.js          # ponto de entrada
+├── tests/                 # testes automatizados das validações
+├── package.json           # dependências e scripts únicos
+└── .env                   # configuração local (não versionada)
 ```
+
+O fluxo MVC separa as rotas (URLs e métodos HTTP), os controllers (regras da
+requisição/resposta) e os models (consultas Prisma e persistência).
 
 ## Recursos da AV2 implementados
 

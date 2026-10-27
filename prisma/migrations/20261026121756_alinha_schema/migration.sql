@@ -1,0 +1,1 @@
+-- No schema changes: this migration records a successful Prisma schema alignment.
